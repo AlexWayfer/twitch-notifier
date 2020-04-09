@@ -17,4 +17,9 @@ export class User extends Model<User> {
   @Default('vk')
   @Column
   public service: string;
+
+  @AllowNull(false)
+  @Default('[]')
+  @Column(DataType.ARRAY(DataType.TEXT))
+  public subscriptions: string[];
 }

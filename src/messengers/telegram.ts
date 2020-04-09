@@ -1,4 +1,4 @@
-import Telegraf, { SceneContextMessageUpdate, Stage, session, BaseScene, TelegramOptions } from 'telegraf'
+import Telegraf, { SceneContextMessageUpdate, Stage, session, BaseScene, TelegramOptions, Extra } from 'telegraf'
 import { config } from '../helpers/config'
 import { info, error } from '../helpers/logs'
 import { User } from '../models/User'

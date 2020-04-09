@@ -9,7 +9,7 @@ import { error } from '../helpers/logs'
 const spaceRegexp = /^\s*$/
 const twitch = new Twitch(config.twitch.clientId)
 
-export const notify = async (streamerId: number) => {
+export const notifyAboutOnline = async (streamerId: number) => {
   try {
     const streamMetaData = await twitch.getStreamMetaData(streamerId)
     sendVk(streamMetaData)
@@ -41,4 +41,23 @@ const sendTelegram = async (streamMetaData: StreamMetadata) => {
   })).map(o => o.id)
   const message = `${streamMetaData.channel.display_name} online!\n${game}${title}https://twitch.tv/${streamMetaData.channel.name}`
   TelegramService.sendMessage({ target: users, message, image: `${preview}?timestamp=${Date.now()}` })
+}
+
+export const notifyAboutChange = async (streamerId: number, oldGame: string) => {
+  const streamMetaData = await twitch.getStreamMetaData(streamerId)
+
+  const users = (await User.findAll({ 
+    where: { subscriptions: { [Op.contains]: ['gameChange'] } },
+    raw: true
+  })).map(o => ({ id: o.id, service: o.service }))
+
+  VkService.sendMessage({ 
+    target: users.filter(o => o.service === 'vk').map(o => o.id), 
+    message: `Игра ${streamMetaData.channel.display_name} изменилась с ${oldGame} на ${streamMetaData.game}`
+  })
+
+  TelegramService.sendMessage({ 
+    target: users.filter(o => o.service === 'telegram').map(o => o.id), 
+    message: `Game ${streamMetaData.channel.display_name} changed from ${oldGame} to ${streamMetaData.game}`
+  })
 }

@@ -2,7 +2,7 @@ import { Twitch } from './twitch'
 import { Channel } from '../models/Channel'
 import { chunk, flattenDeep } from 'lodash'
 import { config } from '../helpers/config'
-import { notify as notifyUsers } from './sender'
+import { notifyAboutOnline, notifyAboutChange } from './sender'
 
 const twitch = new Twitch(config.twitch.clientId)
 
@@ -15,10 +15,13 @@ async function check () {
     const channel = onlineChannels.find(o => Number(o.user_id) === dbChannel.id)
 
     if (channel && !dbChannel.online) { // twitch channel online, but offline in db => do notify
-      await dbChannel.update({ online: true })
-      notifyUsers(dbChannel.id)
+      await dbChannel.update({ online: true, game: channel.game })
+      notifyAboutOnline(dbChannel.id)
     } else if (!channel && dbChannel.online) { // if channel offline on twtch but online in db, then set channel as offline in db
       await dbChannel.update({ online: false })
+    } else if (channel && dbChannel.online && channel.game !== dbChannel.game) {
+      notifyAboutChange(dbChannel.id, channel.game)
+      await dbChannel.update({ game: (await twitch.getStreamMetaData(dbChannel.id)).game })
     } else if (channel && dbChannel.online) { // skip if twitch channel online and online in db
       continue
     } else await dbChannel.update({ online: false }) // set channel in db as offline
@@ -34,3 +37,4 @@ async function getOnlineStreams(channels: number[]) {
   }
   return onlineChannels
 }
+
